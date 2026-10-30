@@ -20,36 +20,34 @@ def ols(X, y):
     X, y = _validate(X, y)
     if X.shape[1] >= X.shape[0]:
         raise ValueError("ols requires p < n. Use minimum_norm for p >= n")
-    return linalg.lstsq(X, y, lapack_driver="gelsd")[0]
+    return fit_linear(X, y)
 
 
 def minimum_norm(X, y):
     """
     Minimum Euclidean norm of least-squares solutions.
     """
-    X, y = _validate(X, y)
-    return linalg.lstsq(X, y, lapack_driver="gelsd")[0]
+    return fit_linear(X, y)
 
 
 def ridge(X, y, alpha=1.0):
     """
     Minimises ||y - X b||^2 / n + alpha ||b||^2.
     """
+    return fit_linear(X, y, alpha)
+
+
+def fit_linear(X, y, alpha=0.0, return_singular_values=False):
+    """
+    Selects OLS/minimum norm at alpha=0, or ridge at alpha>0.
+    """
     X, y = _validate(X, y)
     if not np.isfinite(alpha) or alpha < 0:
         raise ValueError("alpha must be finite and nonnegative")
     if alpha == 0:
-        return minimum_norm(X, y)
-    U, s, Vt = linalg.svd(X, full_matrices=False)
-    weights = s / (s**2 + X.shape[0] * alpha)
-    return Vt.T @ (weights * (U.T @ y))
-
-
-def fit_linear(X, y, alpha=0.0):
-    """
-    Selects OLS/minimum norm at alpha=0, or ridge at alpha>0.
-    """
-    if alpha != 0:
-        return ridge(X, y, alpha)
-    X, y = _validate(X, y)
-    return ols(X, y) if X.shape[1] < X.shape[0] else minimum_norm(X, y)
+        beta_hat, _, _, s = linalg.lstsq(X, y, lapack_driver="gelsd")
+    else:
+        U, s, Vt = linalg.svd(X, full_matrices=False)
+        weights = s / (s**2 + X.shape[0] * alpha)
+        beta_hat = Vt.T @ (weights * (U.T @ y))
+    return (beta_hat, s) if return_singular_values else beta_hat

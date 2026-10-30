@@ -36,17 +36,18 @@ def run_sweep(n=100, n_test=2000, ratios=DEFAULT_RATIOS, trials=5, seed=0,
             beta = make_coefficients(p, rng, signal_norm)
             X, y = sample_linear_data(n, beta, rng, noise_std)
             X_test, y_test = sample_linear_data(n_test, beta, rng, noise_std)
-            beta_hat = fit_linear(X, y, alpha)
+            beta_hat, s = fit_linear(X, y, alpha, return_singular_values=True)
+            test_prediction = X_test @ beta_hat
             rows.append({
                 "n": n, "n_test": n_test, "p": p, "ratio": p / n,
                 "trial": trial, "seed": seed, "noise_std": noise_std,
                 "signal_norm": signal_norm, "alpha": alpha,
                 "train_mse": mse(y, X @ beta_hat),
-                "test_mse": mse(y_test, X_test @ beta_hat),
-                "excess_mse": mse(X_test @ beta, X_test @ beta_hat),
+                "test_mse": mse(y_test, test_prediction),
+                "excess_mse": mse(X_test @ beta, test_prediction),
                 "coefficient_error": float(np.linalg.norm(beta_hat - beta) ** 2),
                 "coefficient_norm": float(np.linalg.norm(beta_hat)),
-                **design_diagnostics(X),
+                **design_diagnostics(X, singular_values=s),
             })
     return rows
 
@@ -84,8 +85,12 @@ def save_results(rows, output_dir, name, group_by=None):
     plt.close(fig)
     return csv_path, plot_path
 
-def add_common_arguments(parser):
-    parser.add_argument("--n", type=int, default=100, help="training sample count")
+def add_common_arguments(parser, multiple_sizes=False):
+    if multiple_sizes:
+        parser.add_argument("--sample-sizes", type=int, nargs="+", default=[10, 30, 100],
+                            help="training sample counts, one panel per value")
+    else:
+        parser.add_argument("--n", type=int, default=100, help="training sample count")
     parser.add_argument("--n-test", type=int, default=2000)
     parser.add_argument("--ratios", type=float, nargs="+", default=DEFAULT_RATIOS,
                         help="p/n values, rounded to integer feature counts")

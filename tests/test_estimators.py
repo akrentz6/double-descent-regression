@@ -1,6 +1,7 @@
 import numpy as np
 
 from double_descent.estimators import fit_linear, minimum_norm, ols, ridge
+from double_descent.metrics import design_diagnostics
 
 
 def test_ols():
@@ -43,10 +44,23 @@ def test_ridge():
     assert np.allclose(ridge(X, y, alpha=0), ols(X, y))
 
 
+def test_reused_singular_values():
+    X = np.array([[1., 0., 1.], [0., 1., 1.]])
+    y = np.array([1., 2.])
+    for alpha in (0, 0.1):
+        beta_hat, s = fit_linear(X, y, alpha, return_singular_values=True)
+        assert np.allclose(beta_hat, fit_linear(X, y, alpha))
+        reused = design_diagnostics(X, singular_values=s)
+        original = design_diagnostics(X)
+        for key in original:
+            assert np.isclose(reused[key], original[key])
+
+
 if __name__ == "__main__":
     test_ols()
     test_minimum_norm()
     test_square_design()
     test_rank_deficient_design()
     test_ridge()
+    test_reused_singular_values()
     print("Estimator tests passed")

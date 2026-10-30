@@ -12,14 +12,14 @@ def mse(y_true, y_pred):
     return float(np.mean((y_true - y_pred) ** 2))
 
 
-def design_diagnostics(X):
+def design_diagnostics(X, singular_values=None):
     """
     Numerical rank and conditioning of the min(n, p) singular values.
     """
     X = np.asarray(X, dtype=float)
     if X.ndim != 2 or min(X.shape) == 0 or not np.all(np.isfinite(X)):
         raise ValueError("X must be a nonempty finite matrix")
-    s = linalg.svdvals(X)
+    s = linalg.svdvals(X) if singular_values is None else np.asarray(singular_values)
     tolerance = max(X.shape) * np.finfo(float).eps * s[0]
     rank = int(np.sum(s > tolerance))
     return {

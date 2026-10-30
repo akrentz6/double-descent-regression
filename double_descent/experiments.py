@@ -89,7 +89,7 @@ def add_common_arguments(parser):
     parser.add_argument("--n-test", type=int, default=2000)
     parser.add_argument("--ratios", type=float, nargs="+", default=DEFAULT_RATIOS,
                         help="p/n values, rounded to integer feature counts")
-    parser.add_argument("--trials", type=int, default=5)
+    parser.add_argument("--trials", type=int, default=200)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--signal-norm", type=float, default=1.0)
     parser.add_argument("--output-dir", type=Path, default=Path("outputs"))
